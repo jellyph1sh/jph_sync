@@ -45,6 +45,11 @@ RegisterServerEvent("jph_sync:getweather", function()
     TriggerClientEvent("jph_sync:setweather", src, activeWeather)
 end)
 
+RegisterServerEvent("jph_sync:changeweather")
+AddEventHandler("jph_sync:changeweather", function(weather)
+    
+end)
+
 RegisterCommand("weather", function(src, args)
     if #args == 0 or #args > 1 then
         sendChatMessage(src, "[ERROR]", "Bad arguments!", {255, 0, 0})
