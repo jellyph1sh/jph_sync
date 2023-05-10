@@ -1,43 +1,32 @@
 local activeWeather = ""
-
-local function isInWeathersList(weathers, arg)
-    for idx, weather in pairs(weathers) do
-        if weather == arg then
-            return true
-        end
-    end
-    return false
-end
+local isRandomWeather = true
 
 local function getRandomWeather(weathers)
     return weathers[math.random(1, #weathers)]
 end
 
-local function sendWeatherToClients(weather)
-    TriggerClientEvent("jph_sync:setweather", -1, weather)
+local function sendWeatherToClients(weather, index, transition)
+    TriggerClientEvent("jph_sync:setweather", -1, weather, index, transition)
 end
 
 local function synchronizeWeather()
-    Citizen.CreateThread(function()
-        while true do
-            activeWeather = getRandomWeather(Config.Weathers)
-            sendWeatherToClients(activeWeather)
-            Config.WeatherUpdate = math.random(600, 1200)
+    local weathersValues = {}
 
-            Citizen.Wait(Config.WeatherUpdate * 1000)
-        end
-    end)
-    print("~g~JPH_SYNC INITIALIZED!")
+    for _, weather in pairs(Config.Weathers) do
+        table.insert(weathersValues, weather.value)
+    end
+    activeWeather = getRandomWeather(weathersValues)
+    sendWeatherToClients(activeWeather, 1, false)
 end
 
-local function sendChatMessage(src, prefix, msg, choosenColor)
-    TriggerClientEvent("chat:addMessage", src, {
-        args = {
-            prefix,
-            msg
-        },
-        color = choosenColor
-    })
+local function randomWeather()
+    Citizen.CreateThread(function()
+        while isRandomWeather do
+            synchronizeWeather()
+
+            Citizen.Wait(math.random(10000, 20000))
+        end
+    end)
 end
 
 RegisterServerEvent("jph_sync:getweather", function()
@@ -46,22 +35,15 @@ RegisterServerEvent("jph_sync:getweather", function()
 end)
 
 RegisterServerEvent("jph_sync:changeweather")
-AddEventHandler("jph_sync:changeweather", function(weather)
-    
+AddEventHandler("jph_sync:changeweather", function(weather, index, transition)
+    activeWeather = weather
+    sendWeatherToClients(activeWeather, index, transition)
 end)
 
-RegisterCommand("weather", function(src, args)
-    if #args == 0 or #args > 1 then
-        sendChatMessage(src, "[ERROR]", "Bad arguments!", {255, 0, 0})
-        return
-    end
-    if not isInWeathersList(Config.Weathers, args[1]) then
-        sendChatMessage(src, "[ERROR]", "Unknow weather!", {255, 0, 0})
-        return
-    end
+RegisterServerEvent("jph_sync:setrandomweatherstate")
+AddEventHandler("jph_sync:setrandomweatherstate", function(newState)
+    isRandomWeather = newState
+    TriggerClientEvent("jph_sync:setrandomweatherstate", -1, newState)
+end)
 
-    activeWeather = args[1]
-    sendWeatherToClients(activeWeather)
-end, true)
-
-synchronizeWeather()
+randomWeather()

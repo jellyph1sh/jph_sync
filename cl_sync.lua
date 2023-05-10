@@ -3,7 +3,7 @@ local function synchronizeTime()
         while true do
             local year, month, day, hour, minute, second = GetUtcTime()
             SetClockDate(day, month, year)
-            NetworkOverrideClockTime(hour + 1, minute, second)
+            NetworkOverrideClockTime(hour, minute, second)
 
             Citizen.Wait(0)
         end
@@ -11,11 +11,15 @@ local function synchronizeTime()
 end
 
 RegisterNetEvent("jph_sync:setweather")
-AddEventHandler("jph_sync:setweather", function(weather)
-    SetWeatherTypeOvertimePersist(weather, Config.TransitionTime)
+AddEventHandler("jph_sync:setweather", function(weather, _, transition)
+    if (transition == nil or transition == false) then
+        SetWeatherTypeNowPersist(weather)
+    else
+        ClearOverrideWeather()
+        ClearWeatherTypePersist()
+        SetWeatherTypeOvertimePersist(weather, 30.0)
+    end
 end)
-
-TriggerEvent('chat:addSuggestion', '/weather', 'Set weather', {{ name="weather", help="CLEAR/CLEARING/CLOUDS/EXTRASUNNY/FOGGY/NEUTRAL/OVERCAST/RAIN/SMOG/THUNDER"}})
 
 synchronizeTime()
 TriggerServerEvent("jph_sync:getweather")
