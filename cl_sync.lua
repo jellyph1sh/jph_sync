@@ -41,7 +41,6 @@ end)
 
 RegisterNetEvent("jph_sync:notifyweather")
 AddEventHandler("jph_sync:notifyweather", function(weather, time)
-    print("ok")
     notify(Config.NotificationTexture, "Weather Report", "Event", 1, "The weather will turn " .. weather .. " in " .. time .. " minutes.")
 end)
 

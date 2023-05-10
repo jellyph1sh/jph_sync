@@ -1,7 +1,7 @@
 Config = {}
-Config.TransitionTime = 180.0
-Config.WeatherRandomTimeMin = 180
-Config.WeatherRandomTimeMax = 300
+Config.TransitionTime = 120.0
+Config.WeatherRandomTimeMin = 600
+Config.WeatherRandomTimeMax = 1200
 Config.NotificationTexture = "DIA_MIC"
 
 Config.Weathers = {
