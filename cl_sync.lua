@@ -17,7 +17,7 @@ AddEventHandler("jph_sync:setweather", function(weather, _, transition)
     else
         ClearOverrideWeather()
         ClearWeatherTypePersist()
-        SetWeatherTypeOvertimePersist(weather, 30.0)
+        SetWeatherTypeOvertimePersist(weather, Config.TransitionTime)
     end
 end)
 

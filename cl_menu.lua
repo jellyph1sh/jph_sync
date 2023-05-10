@@ -1,7 +1,4 @@
-local actualWeather = ""
-local isRandomWeather = true
-
-local function createWeatherButtons(menu)
+local function createWeatherItems(menu, actualWeather)
     for _, weather in pairs(Config.Weathers) do
         local item = NativeUI.CreateItem(weather.name, weather.desc)
         if (weather.value == actualWeather) then
@@ -11,25 +8,38 @@ local function createWeatherButtons(menu)
     end
 end
 
-local function createMainMenuItems(menuPool, menu)
+local function createMainItems(menuPool, menu, transition, state)
     local syncWeatherMenu = menuPool:AddSubMenu(menu, "Weather Menu", "~b~Control weather like a god!")
-    createWeatherButtons(syncWeatherMenu)
+
     local weatherTransition = NativeUI.CreateCheckboxItem("Weather Transition", transition, "Wish you a smooth weather transition.")
     menu:AddItem(weatherTransition)
 
-    local weatherRandom = NativeUI.CreateCheckboxItem("Random Weather", isRandomWeather, "Wish you a some random weather.")
-    menu:AddItem(weatherRandom)
+    menuPool:MouseControlsEnabled(false)
+    menuPool:MouseEdgeEnabled(false)
+    menuPool:ControlDisablingEnabled(false)
 
-    return syncWeatherMenu, weatherTransition, weatherRandom
+    return syncWeatherMenu, weatherTransition
 end
 
-local function createMenu(menuPool)
+local function createMainMenu(menuPool, transition)
     local syncMainMenu = NativeUI.CreateMenu("Sync Menu", "~b~Manage the weather and time!")
     menuPool:Add(syncMainMenu)
 
-    local transition = true
+    local syncWeatherMenu, weatherTransition = createMainItems(menuPool, syncMainMenu, transition)
 
-    local syncWeatherMenu, weatherTransition, weatherRandom = createMainMenuItems(menuPool, syncMainMenu)
+    syncMainMenu.OnCheckboxChange = function(sender, item, checked)
+        if (item == weatherTransition) then
+            transition = checked
+        end
+
+        if (item == weatherRandom) then
+            if (checked) then
+                TriggerServerEvent("jph_sync:enablerandomweather")
+            else
+                TriggerServerEvent("jph_sync:disablerandomweather")
+            end
+        end
+    end
 
     syncWeatherMenu.OnItemSelect = function(sender, item, index)
         if (item.RightBadge.Badge == BadgeStyle.None) then
@@ -42,44 +52,23 @@ local function createMenu(menuPool)
         end
     end
 
-    syncMainMenu.OnCheckboxChange = function(sender, item, checked)
-        if (item == weatherTransition) then
-            transition = checked
-        end
-        if (item == weatherRandom) then
-            isRandomWeather = checked
-            TriggerServerEvent("jph_sync:setrandomweatherstate", isRandomWeather)
-        end
-    end
-
     menuPool:RefreshIndex()
 
     return syncMainMenu, syncWeatherMenu
 end
 
-local function executeMenu()
+local function executeMainMenu()
     Citizen.CreateThread(function()
         local menuPool = NativeUI.CreatePool()
+        local transition = true
 
-        local syncMainMenu, syncWeatherMenu = createMenu(menuPool)
+        local syncMainMenu, syncWeatherMenu = createMainMenu(menuPool, transition)
 
         AddEventHandler("jph_sync:setweather", function(weather, index)
-            actualWeather = weather
             syncWeatherMenu:Clear()
-            createWeatherButtons(syncWeatherMenu)
+            createWeatherItems(syncWeatherMenu, weather)
             syncWeatherMenu:CurrentSelection(index)
         end)
-
-        RegisterNetEvent("jph_sync:setrandomweatherstate")
-        AddEventHandler("jph_sync:setrandomweatherstate", function(newState)
-            isRandomWeather = newState
-            syncMainMenu:Clear()
-            createMainMenuItems(menuPool, syncMainMenu)
-        end)
-
-        menuPool:MouseControlsEnabled(false)
-        menuPool:MouseEdgeEnabled(false)
-        menuPool:ControlDisablingEnabled(false)
 
         while true do
             menuPool:ProcessMenus()
@@ -91,4 +80,4 @@ local function executeMenu()
     end)
 end
 
-executeMenu()
+executeMainMenu()
