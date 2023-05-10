@@ -1,9 +1,8 @@
 Config = {}
-
-Config.WeatherUpdate = math.random(600, 1200)
-Config.TransitionTime = 60.0
-Config.WeatherRandomTimeMin = 300
-Config.WeatherRandomTimeMax = 1200
+Config.TransitionTime = 180.0
+Config.WeatherRandomTimeMin = 180
+Config.WeatherRandomTimeMax = 300
+Config.NotificationTexture = "DIA_MIC"
 
 Config.Weathers = {
     {name = "Clear", desc = "Clear", value = "CLEAR"},

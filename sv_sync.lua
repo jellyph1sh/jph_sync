@@ -1,31 +1,27 @@
 local activeWeather = ""
 
-local function getRandomWeather(weathers)
-    return weathers[math.random(1, #weathers)]
-end
-
-local function sendWeatherToClients(weather, index, transition)
-    TriggerClientEvent("jph_sync:setweather", -1, weather, index, transition)
-end
-
-local function synchronizeWeather()
-    local weathersValues = {}
-
-    for _, weather in pairs(Config.RandomWeathers) do
-        table.insert(weathersValues, weather.value)
-    end
-    activeWeather = getRandomWeather(weathersValues)
-    sendWeatherToClients(activeWeather, 1, true)
-end
-
 local function randomWeather()
     Citizen.CreateThread(function()
-        local randomWeather = true
+        local weathersValues = {}
+        local weathersNames = {}
 
-        while randomWeather do
-            synchronizeWeather()
+        for _, weather in pairs(Config.RandomWeathers) do
+            table.insert(weathersValues, weather.value)
+            table.insert(weathersNames, weather.name)
+        end
+        local index = math.random(1, #weathersValues)
+        activeWeather = weathersValues[index]
+        print(activeWeather)
+        TriggerClientEvent("jph_sync:setweather", -1, activeWeather, 1, false)
+        Wait(500)
 
-            Citizen.Wait(math.random(Config.WeatherRandomTimeMin*100, Config.WeatherRandomTimeMax*100))
+        while true do
+            index = math.random(1, #weathersValues)
+            local time = math.random(Config.WeatherRandomTimeMin, Config.WeatherRandomTimeMax)
+            TriggerClientEvent("jph_sync:notifyweather", -1, weathersNames[index], math.floor(time / 60))
+            Citizen.Wait(time * 1000)
+            activeWeather = weathersValues[index]
+            TriggerClientEvent("jph_sync:setweather", -1, activeWeather, 1, true)
         end
     end)
 end
@@ -38,7 +34,7 @@ end)
 RegisterServerEvent("jph_sync:changeweather")
 AddEventHandler("jph_sync:changeweather", function(weather, index, transition)
     activeWeather = weather
-    sendWeatherToClients(activeWeather, index, transition)
+    TriggerClientEvent("jph_sync:setweather", -1, activeWeather, index, transition)
 end)
 
 RegisterServerEvent("jph_sync:enablerandomweather")
