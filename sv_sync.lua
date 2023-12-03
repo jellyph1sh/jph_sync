@@ -1,43 +1,53 @@
-local activeWeather = ""
-
-local function isInWeathersList(weathers, arg)
-    for idx, weather in pairs(weathers) do
-        if weather == arg then
-            return true
-        end
-    end
-    return false
-end
-
-local function getRandomWeather(weathers)
-    return weathers[math.random(1, #weathers)]
-end
-
-local function sendWeatherToClients(weather)
-    TriggerClientEvent("jph_sync:setweather", -1, weather)
-end
+local activeWeather = nil
 
 local function synchronizeWeather()
-    Citizen.CreateThread(function()
-        while true do
-            activeWeather = getRandomWeather(Config.Weathers)
-            sendWeatherToClients(activeWeather)
-            Config.WeatherUpdate = math.random(600, 1200)
+    local weathersValues = {}
+    local weathersNames = {}
 
-            Citizen.Wait(Config.WeatherUpdate * 1000)
-        end
-    end)
-    print("~g~JPH_SYNC INITIALIZED!")
+    for _, weather in pairs(Config.RandomWeathers) do
+        table.insert(weathersValues, weather.value)
+        table.insert(weathersNames, weather.name)
+    end
+    local index = math.random(1, #weathersValues)
+    activeWeather = weathersValues[index]
+    print(activeWeather)
+    TriggerClientEvent("jph_sync:setweather", -1, activeWeather, 1, false)
 end
 
-local function sendChatMessage(src, prefix, msg, choosenColor)
-    TriggerClientEvent("chat:addMessage", src, {
-        args = {
-            prefix,
-            msg
-        },
-        color = choosenColor
-    })
+local function randomWeather()
+    Citizen.CreateThread(function()
+
+        local random = true
+
+        RegisterServerEvent("jph_sync:disablerandomweather")
+        AddEventHandler("jph_sync:disablerandomweather", function()
+            random = false
+            TriggerClientEvent("jph_sync:setweatherrandom", -1, false)
+        end)
+        
+        if (activeWeather == nil) then
+            synchronizeWeather()
+        end
+
+        local weathersValues = {}
+        local weathersNames = {}
+
+        for _, weather in pairs(Config.RandomWeathers) do
+            table.insert(weathersValues, weather.value)
+            table.insert(weathersNames, weather.name)
+        end
+
+        Wait(500)
+
+        while random do
+            local index = math.random(1, #weathersValues)
+            local time = math.random(Config.WeatherRandomTimeMin, Config.WeatherRandomTimeMax)
+            TriggerClientEvent("jph_sync:notifyweather", -1, weathersNames[index], math.floor(time / 60))
+            Citizen.Wait(time * 1000)
+            activeWeather = weathersValues[index]
+            TriggerClientEvent("jph_sync:setweather", -1, activeWeather, 1, true)
+        end
+    end)
 end
 
 RegisterServerEvent("jph_sync:getweather", function()
@@ -45,18 +55,16 @@ RegisterServerEvent("jph_sync:getweather", function()
     TriggerClientEvent("jph_sync:setweather", src, activeWeather)
 end)
 
-RegisterCommand("weather", function(src, args)
-    if #args == 0 or #args > 1 then
-        sendChatMessage(src, "[ERROR]", "Bad arguments!", {255, 0, 0})
-        return
-    end
-    if not isInWeathersList(Config.Weathers, args[1]) then
-        sendChatMessage(src, "[ERROR]", "Unknow weather!", {255, 0, 0})
-        return
-    end
+RegisterServerEvent("jph_sync:changeweather")
+AddEventHandler("jph_sync:changeweather", function(weather, index, transition)
+    activeWeather = weather
+    TriggerClientEvent("jph_sync:setweather", -1, activeWeather, index, transition)
+end)
 
-    activeWeather = args[1]
-    sendWeatherToClients(activeWeather)
-end, true)
+RegisterServerEvent("jph_sync:enablerandomweather")
+AddEventHandler("jph_sync:enablerandomweather", function()
+    randomWeather()
+    TriggerClientEvent("jph_sync:setweatherrandom", -1, true)
+end)
 
-synchronizeWeather()
+randomWeather()
